@@ -3,10 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Dragons El Puig — Calendario unificado</title>
+<title>Dragons El Puig — Calendario 2026/27</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- PapaParse para leer el CSV publicado de Google Sheets -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
+
 <style>
   :root {
     --bg: #0E0D0C;
@@ -22,14 +27,10 @@
     --draw: #D9A536;
     --black-team: #0E0D0C;
     --white-team: #F5F3EF;
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
-  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
   * { box-sizing: border-box; }
-  html, body { height: 100%; }
+  html, body { height: 100%; margin: 0; }
   body {
-    margin: 0;
     background: var(--bg);
     color: var(--ink);
     font-family: 'Manrope', system-ui, -apple-system, sans-serif;
@@ -42,13 +43,13 @@
     letter-spacing: 0.01em;
     line-height: 0.86;
   }
-  .wrap { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+  .wrap { max-width: 950px; margin: 0 auto; padding: 0 20px; }
   a { color: inherit; }
 
   /* ---------- HERO ---------- */
   header.hero {
     position: relative;
-    padding: 56px 0 34px;
+    padding: 40px 0 24px;
     border-bottom: 1px solid var(--line);
     overflow: hidden;
   }
@@ -59,238 +60,133 @@
     background: radial-gradient(circle at 60% 40%, rgba(200,32,44,0.16), transparent 65%);
     pointer-events: none;
   }
-  .brand-row {
-    display: flex;
-    align-items: center;
-    gap: 22px;
-  }
+  .brand-row { display: flex; align-items: center; gap: 20px; }
   .badge {
-    width: clamp(84px, 18vw, 128px);
-    height: clamp(84px, 18vw, 128px);
-    border-radius: 22px;
-    flex: none;
-    object-fit: contain;
-    background: var(--silver);
-    padding: 8px;
+    width: 80px; height: 80px;
+    border-radius: 18px; flex: none; object-fit: contain;
+    background: var(--silver); padding: 6px;
     box-shadow: 0 0 0 1px var(--line), 0 8px 24px rgba(0,0,0,0.5);
   }
-  h1.club-name {
-    font-size: clamp(2.5rem, 9vw, 5.2rem);
-    margin: 0;
-    color: var(--ink);
-  }
+  h1.club-name { font-size: clamp(2rem, 7vw, 4rem); margin: 0; color: var(--ink); }
   h1.club-name .accent { color: var(--ember); }
-  .hero-sub {
-    max-width: 52ch;
-    color: var(--ink-dim);
-    font-size: 1.02rem;
-    margin: 16px 0 0;
-    line-height: 1.55;
-  }
 
-  /* ---------- NEXT MATCH ---------- */
+  /* ---------- NEXT MATCH CARD ---------- */
   .next-match {
-    margin-top: 32px;
+    margin-top: 24px;
     background: var(--card);
     border: 1px solid var(--line);
     border-left: 3px solid var(--ember);
-    border-radius: 3px;
-    padding: 20px 24px;
+    border-radius: 4px;
+    padding: 16px 20px;
   }
-  .nm-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18px;
-    flex-wrap: wrap;
-  }
-  .nm-header .label { font-size: 0.8rem; color: var(--ink-dim); }
-  .nm-list { display: flex; flex-direction: column; }
-  .nm-item {
-    padding-top: 14px;
-    margin-top: 14px;
-    border-top: 1px solid var(--line);
-  }
-  .nm-item:first-child { padding-top: 16px; margin-top: 16px; }
-  .nm-item .tag-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .nm-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .nm-header .label { font-size: 0.8rem; color: var(--ink-dim); margin: 0; }
+  .nm-item { padding-top: 10px; margin-top: 10px; border-top: 1px solid var(--line); }
+  .nm-item:first-child { padding-top: 10px; margin-top: 10px; }
   .nm-item .cat-label { font-size: 0.78rem; color: var(--ink-dim); }
-  .nm-item .matchup {
-    font-family: 'Big Shoulders Display', sans-serif;
-    font-weight: 700;
-    font-size: 1.4rem;
-    color: var(--ink);
-    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 0;
-  }
+  .nm-item .matchup { font-family: 'Big Shoulders Display', sans-serif; font-weight: 700; font-size: 1.3rem; color: var(--ink); }
   .nm-item .matchup .dragons { color: var(--ember); }
-  .nm-item .matchup .vs { color: var(--ink-dim); font-weight: 500; padding: 0 8px; font-family: 'Manrope', sans-serif; font-size: 0.92rem; }
-  .nm-item .meta { color: var(--ink-dim); font-size: 0.86rem; margin-top: 4px; }
-  .countdown { display: flex; gap: 12px; }
-  .countdown .unit { text-align: center; min-width: 48px; }
-  .countdown .num { font-family: 'Big Shoulders Display', sans-serif; font-size: 1.7rem; font-weight: 800; color: var(--ember); line-height: 1; }
-  .countdown .u-label { font-size: 0.64rem; color: var(--ink-dim); margin-top: 2px; }
+  .nm-item .matchup .vs { color: var(--ink-dim); padding: 0 6px; font-family: 'Manrope', sans-serif; font-size: 0.85rem; }
+  .nm-item .meta { color: var(--ink-dim); font-size: 0.82rem; margin-top: 2px; }
+  .countdown { display: flex; gap: 10px; }
+  .countdown .unit { text-align: center; min-width: 40px; }
+  .countdown .num { font-family: 'Big Shoulders Display', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--ember); line-height: 1; }
+  .countdown .u-label { font-size: 0.6rem; color: var(--ink-dim); }
 
-  /* ---------- VIEW TABS (Próximos / Jugados) ---------- */
-  .view-tabs {
-    display: inline-flex;
-    margin-top: 28px;
-    background: var(--bg-alt);
-    border: 1px solid var(--line);
-    border-radius: 100px;
-    padding: 4px;
-    gap: 4px;
-  }
-  .view-tab {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 8px 18px;
-    border-radius: 100px;
-    font-size: 0.88rem;
-    font-weight: 700;
-    color: var(--ink-dim);
-    cursor: pointer;
-    user-select: none;
-    transition: background .15s, color .15s;
-  }
-  .view-tab .count {
-    font-size: 0.72rem;
-    font-weight: 700;
+  /* ---------- CONTROLS & FILTERS ---------- */
+  .controls-bar {
+    margin-top: 24px;
     background: var(--card);
-    color: var(--ink-dim);
-    padding: 2px 8px;
-    border-radius: 100px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
-  .view-tab:not(.active):hover { color: var(--ink); }
-  .view-tab.active { background: var(--ember); color: #FFFFFF; }
-  .view-tab.active .count { background: rgba(0,0,0,0.25); color: #FFFFFF; }
-  .view-tabs + .filters { margin-top: 18px; }
-
-  /* ---------- FILTERS ---------- */
-  .filters {
-    display: flex; gap: 8px; flex-wrap: wrap;
-    margin: 28px 0 8px;
+  @media (min-width: 640px) {
+    .controls-bar { flex-direction: row; align-items: center; justify-content: space-between; }
   }
+  .filter-label { font-size: 0.75rem; font-weight: 700; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip {
-    display: inline-flex; align-items: center; gap: 7px;
-    background: var(--card);
-    border: 1px solid var(--line);
-    color: var(--ink-dim);
-    padding: 8px 14px;
-    border-radius: 100px;
-    font-size: 0.86rem;
-    font-weight: 600;
-    cursor: pointer;
-    user-select: none;
-    transition: border-color .15s, color .15s, background .15s;
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--bg-alt); border: 1px solid var(--line);
+    color: var(--ink-dim); padding: 6px 12px; border-radius: 100px;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer; user-select: none;
+    transition: all .15s;
   }
-  .chip .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-  .chip.active {
-    background: var(--ember);
-    border-color: var(--ember);
-    color: #FFFFFF;
-  }
+  .chip.active { background: var(--ember); border-color: var(--ember); color: #fff; }
   .chip:not(.active):hover { border-color: var(--silver); color: var(--ink); }
 
-  /* ---------- MATCH LIST ---------- */
-  main { padding: 24px 0 8px; }
-  .month-heading {
-    font-family: 'Big Shoulders Display', sans-serif;
-    font-weight: 700;
-    font-size: 1.15rem;
-    color: var(--silver);
-    margin: 30px 0 4px;
-    padding-top: 10px;
-  }
-  .month-heading:first-child { margin-top: 6px; }
-  .fixture {
-    display: grid;
-    grid-template-columns: 58px 1fr auto;
-    align-items: center;
-    gap: 16px;
-    padding: 15px 0;
-    border-top: 1px solid var(--line);
-  }
-  .fixture .date { text-align: center; }
-  .fixture .date .day {
-    font-family: 'Big Shoulders Display', sans-serif;
-    font-weight: 800;
-    font-size: 1.55rem;
-    color: var(--ink);
-    display: block;
-    line-height: 1;
-  }
-  .fixture .date .wd { font-size: 0.68rem; color: var(--ink-dim); text-transform: lowercase; }
-  .fixture .info .tags { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; flex-wrap: wrap; }
-  .team-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-  .team-dot.negro { background: var(--black-team); border: 1px solid var(--silver); }
-  .team-dot.blanco { background: var(--white-team); border: 1px solid var(--ember); }
-  .cat-tag { font-size: 0.72rem; color: var(--ink-dim); }
-  .jor-tag { font-size: 0.72rem; color: var(--ink-dim); }
-  .jor-tag::before { content: '· '; }
-  .fixture .teams {
-    font-weight: 700; font-size: 0.98rem; line-height: 1.35;
-    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 0;
-  }
-  .fixture .teams .dragons { color: var(--ember); }
-  .fixture .teams .vs { color: var(--ink-dim); font-weight: 500; padding: 0 8px; }
-  .fixture .venue { color: var(--ink-dim); font-size: 0.82rem; margin-top: 6px; }
-  .fixture .venue .hora { color: var(--ink); font-weight: 600; }
-  .fixture .right-col { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-  .result-badge {
-    font-family: 'Big Shoulders Display', sans-serif;
-    font-weight: 800;
-    font-size: 1.2rem;
-  }
-  .result-badge.win { color: var(--win); }
-  .result-badge.loss { color: var(--loss); }
-  .result-badge.draw { color: var(--draw); }
-  .result-badge.pending { font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 0.78rem; color: var(--ink-dim); }
-  .map-link {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-size: 0.76rem; color: var(--silver); text-decoration: none;
-    border: 1px solid var(--line); padding: 5px 10px; border-radius: 100px;
-    white-space: nowrap;
-  }
-  .map-link:hover { border-color: var(--silver); }
-  .empty-state { color: var(--ink-dim); padding: 40px 0; font-size: 0.95rem; }
-
-  .error-state { border: 1px solid var(--line); border-left: 3px solid var(--loss); background: var(--card); padding: 20px 24px; border-radius: 3px; margin-top: 10px; line-height: 1.55; }
-  .error-state p { margin: 0 0 14px; color: var(--ink); }
-  .retry-btn { background: var(--ember); color: #fff; border: 0; padding: 9px 18px; border-radius: 100px; font: 700 0.86rem 'Manrope', sans-serif; cursor: pointer; }
-  .retry-btn:hover { filter: brightness(1.1); }
-
-  /* ---------- LOGOS DE EQUIPO ---------- */
-  .team { display: inline-flex; align-items: center; gap: 8px; }
-  .team-logo {
-    width: 28px; height: 28px; flex: none;
-    object-fit: contain;
-    background: var(--silver);
-    border-radius: 8px;
-    padding: 2px;
-  }
-  .nm-item .team-logo { width: 34px; height: 34px; }
-
-  /* ---------- SOURCE / FOOTER ---------- */
-  .source-tag {
-    display: inline-flex; align-items: center; gap: 8px;
+  select.month-select {
     background: var(--bg-alt);
     border: 1px solid var(--line);
-    padding: 6px 12px; border-radius: 100px;
-    font-size: 0.78rem; color: var(--ink-dim);
-    margin-top: 26px;
-  }
-  .source-tag .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--draw); }
-  footer {
-    padding: 30px 0 calc(40px + env(safe-area-inset-bottom, 0px));
-    color: var(--ink-dim);
-    font-size: 0.82rem;
-    line-height: 1.6;
-    border-top: 1px solid var(--line);
-    margin-top: 20px;
+    color: var(--ink);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    outline: none;
+    cursor: pointer;
   }
 
-  @media (max-width: 560px) {
-    .fixture { grid-template-columns: 44px 1fr; }
-    .fixture .right-col { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 6px; }
+  /* ---------- LEYENDA ---------- */
+  .legend-bar {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 16px;
+    background: var(--card); border: 1px solid var(--line);
+    padding: 10px 16px; border-radius: 8px; margin-top: 16px;
+    font-size: 0.78rem; color: var(--ink-dim); font-weight: 600;
   }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .legend-dot.free { background: rgba(79, 191, 110, 0.2); border: 1px solid var(--win); }
+  .legend-dot.partial { background: rgba(217, 165, 54, 0.2); border: 1px solid var(--draw); }
+  .legend-dot.busy { background: rgba(225, 75, 75, 0.2); border: 1px solid var(--loss); }
+
+  /* ---------- CALENDAR GRID ---------- */
+  main { padding: 24px 0; }
+  .month-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+  .month-title {
+    font-family: 'Big Shoulders Display', sans-serif;
+    font-size: 1.4rem; font-weight: 800; color: var(--silver);
+    margin-bottom: 12px; pb-2; border-bottom: 1px solid var(--line);
+  }
+  .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-center; font-size: 0.75rem; }
+  .day-header { font-weight: 800; padding: 4px 0; color: var(--ink-dim); }
+  .day-header.weekend { color: var(--ember); }
+
+  .calendar-cell {
+    min-height: 70px; border-radius: 6px; border: 1px solid var(--line);
+    padding: 4px; text-align: left; display: flex; flex-direction: column; justify-content: flex-start;
+    background: var(--bg-alt); transition: all .15s;
+  }
+  .calendar-cell.free-weekend { background: rgba(79, 191, 110, 0.08); border-color: rgba(79, 191, 110, 0.3); }
+  .calendar-cell.partial-weekend { background: rgba(217, 165, 54, 0.12); border-color: rgba(217, 165, 54, 0.4); }
+  .calendar-cell.busy-weekend { background: rgba(225, 75, 75, 0.12); border-color: rgba(225, 75, 75, 0.4); }
+
+  .cell-num { font-weight: 800; font-size: 0.75rem; color: var(--ink-dim); margin-bottom: 4px; }
+  .is-weekend .cell-num { color: var(--ink); }
+
+  .match-pill {
+    background: var(--ember); color: #fff;
+    padding: 2px 4px; border-radius: 3px;
+    font-size: 0.65rem; font-weight: 700; line-height: 1.2;
+    margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* ---------- FOOTER ---------- */
+  footer {
+    padding: 24px 0; color: var(--ink-dim); font-size: 0.8rem;
+    border-t: 1px solid var(--line); text-center: center; margin-top: 30px;
+  }
+  .sync-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--ink-dim); }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--draw); }
 </style>
 </head>
 <body>
@@ -302,11 +198,11 @@
       <img class="badge" src="data:image/png;base64,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
       <h1 class="club-name display">DRAGONS<br><span class="accent">EL PUIG</span></h1>
     </div>
-    <p class="hero-sub">Calendario del club para la temporada 2026/27: Liga Autonómica.</p>
 
+    <!-- TARJETA PRÓXIMO PARTIDO -->
     <div class="next-match" id="next-match">
       <div class="nm-header">
-        <p class="label" id="nm-label">Cargando…</p>
+        <p class="label" id="nm-label">Cargando datos…</p>
         <div class="countdown" id="countdown">
           <div class="unit"><div class="num" id="cd-d">–</div><div class="u-label">días</div></div>
           <div class="unit"><div class="num" id="cd-h">–</div><div class="u-label">horas</div></div>
@@ -316,310 +212,180 @@
       <div class="nm-list" id="nm-list"></div>
     </div>
 
-    <div class="view-tabs" id="view-tabs"></div>
-    <div class="filters" id="filters"></div>
+    <!-- FILTROS Y CONTROLES -->
+    <div class="controls-bar">
+      <div>
+        <span class="filter-label">Filtrar por Categoría</span>
+        <div id="category-chips" class="chips">
+          <!-- Categorías generadas dinámicamente -->
+        </div>
+      </div>
+      <div>
+        <span class="filter-label">Mes</span>
+        <select id="month-select" onchange="renderCalendar()" class="month-select">
+          <option value="ALL">Todo el Calendario</option>
+          <option value="2026-09">Septiembre 2026</option>
+          <option value="2026-10" selected>Octubre 2026</option>
+          <option value="2026-11">Noviembre 2026</option>
+          <option value="2026-12">Diciembre 2026</option>
+          <option value="2027-01">Enero 2027</option>
+          <option value="2027-02">Febrero 2027</option>
+          <option value="2027-03">Marzo 2027</option>
+          <option value="2027-04">Abril 2027</option>
+          <option value="2027-05">Mayo 2027</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- LEYENDA -->
+    <div class="legend-bar">
+      <div class="legend-item"><span class="legend-dot free"></span> Fin de semana libre</div>
+      <div class="legend-item"><span class="legend-dot partial"></span> Libre para alguna categoría</div>
+      <div class="legend-item"><span class="legend-dot busy"></span> Ocupado (Con partidos)</div>
+    </div>
+
   </div>
 </header>
 
 <main class="wrap">
-  <div id="fixture-container"></div>
-  <span class="source-tag" id="source-tag"><span class="dot" id="source-dot"></span><span id="source-text">Conectando con origen de datos…</span></span>
+  <!-- CONTENEDOR DEL CALENDARIO POR MESES -->
+  <div id="calendar-container"></div>
 </main>
 
 <footer>
   <div class="wrap">
-    <p>Página informativa. Para validar correctamente los horarios lo mejor es verlos directamente en <a href="https://www.hockeylinea.fpcv.es/" target="_blank" rel="noopener">la página de la federación</a>.</p>
+    <p>© 2026 Dragons El Puig Hockey Club • Sincronizado automáticamente con Google Sheets.</p>
+    <div class="sync-tag">
+      <span class="sync-dot" id="sync-dot"></span>
+      <span id="sync-text">Conectando...</span>
+    </div>
   </div>
 </footer>
 
 <script>
-/* ---------- Google Sheet publicado como CSV ---------- */
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSl5xg397GTfLDogRcVZAXObRrp8JH7-j5YAlel0hNU1Sb33IS_WT0KxKDY_5fNKuL_YWnqUubSiG25/pub?gid=795521530&single=true&output=csv";
 
-/* ---------- Logos: regla (sobre el nombre del equipo) → archivo en /logos ---------- */
-const LOGO_RULES = [
-  [/DRAGONS/i,    'puig.png'],
-  [/ALAS/i,       'alas.png'],
-  [/DIABLOS/i,    'dia.png'],
-  [/DINO/i,       'dino.png'],
-  [/HALCONES/i,   'hal.png'],
-  [/CASTELL/i,    'hcc.png'],
-  [/SKULLS/i,     'skulls.png'],
-  [/TAURONS/i,    'tau.png'],
-  [/TITANES/i,    'tita.png'],
-  [/LLOPS|VILA/i, 'vila.png']
-];
-function logoFor(name) {
-  const hit = LOGO_RULES.find(([re]) => re.test(name));
-  return hit ? 'logos/' + hit[1] : '';
-}
+let RAW_DATA = [];
+let ALL_CATEGORIES = [];
+let selectedCategories = [];
 
-/* ---------- Parser CSV mínimo ---------- */
-function parseCSV(text) {
-  const rows = [];
-  let row = [], field = '', inQuotes = false;
-  const pushField = () => { row.push(field); field = ''; };
-  const pushRow = () => { rows.push(row); row = []; };
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i], next = text[i + 1];
-    if (inQuotes) {
-      if (c === '"' && next === '"') { field += '"'; i++; }
-      else if (c === '"') { inQuotes = false; }
-      else { field += c; }
-    } else {
-      if (c === '"') inQuotes = true;
-      else if (c === ',') pushField();
-      else if (c === '\r') { /* skip */ }
-      else if (c === '\n') { pushField(); pushRow(); }
-      else field += c;
-    }
+document.addEventListener("DOMContentLoaded", () => {
+  fetchData();
+});
+
+function parseSpanishDate(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.trim().split('/');
+  if (parts.length === 3) {
+    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
   }
-  if (field.length || row.length) { pushField(); pushRow(); }
-  const clean = rows.filter(r => r.some(f => f.trim() !== ''));
-  const headers = clean[0].map(h => h.trim());
-  return clean.slice(1).map(r => {
-    const obj = {};
-    headers.forEach((h, idx) => obj[h] = (r[idx] ?? '').trim());
-    return obj;
-  });
+  return dateStr;
 }
 
-/* ---------- Normalización de fecha/hora ---------- */
-function normDate(raw) {
-  if (!raw) return null;
-  let s = raw.trim();
-  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
-  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
-  const d = new Date(s);
-  return isNaN(d) ? null : d;
-}
-function normTime(raw) {
-  if (!raw) return '';
-  const s = raw.trim().replace('.', ':');
-  const m = s.match(/^(\d{1,2}):(\d{2})/);
-  if (!m) return '';
-  return String(m[1]).padStart(2, '0') + ':' + m[2];
-}
+function fetchData() {
+  Papa.parse(SHEET_CSV_URL, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      if (results.data && results.data.length > 0) {
+        RAW_DATA = results.data.map(row => ({
+          categoria: (row['Categoría'] || '').trim(),
+          fecha: parseSpanishDate(row['Fecha'] || ''),
+          hora: (row['Hora'] || '').trim(),
+          instalacion: (row['Instalación / Pista'] || '').trim(),
+          jornada: (row['Jornada'] || '').trim(),
+          local: (row['Equipo Local'] || '').trim(),
+          visitante: (row['Equipo Visitante'] || '').trim(),
+          resultado: (row['Resultado'] || '-').trim(),
+          mapa: (row['Mapa'] || '').trim()
+        })).filter(r => r.categoria && r.fecha);
 
-async function loadFixtures() {
-  try {
-    const res = await fetch(SHEET_CSV_URL, { cache: 'no-store' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const rows = parseCSV(await res.text());
-    const fixtures = rows.map(r => {
-      const dateObj = normDate(r['Fecha']);
-      return {
-        categoria: r['Categoría'] || '',
-        dateObj,
-        hora: normTime(r['Hora']),
-        pista: r['Instalación / Pista'] || '',
-        jornada: (r['Jornada'] || '').replace(/^JORNADA\s*/i, '').replace(/^J\s*/i, ''),
-        local: r['Equipo Local'] || '',
-        visitante: r['Equipo Visitante'] || '',
-        resultado: (r['Resultado'] || '').trim() === '-' ? '' : (r['Resultado'] || '').trim(),
-        mapa: r['Mapa'] || ''
-      };
-    }).filter(f => f.dateObj);
-    if (!fixtures.length) throw new Error('La hoja no contiene partidos');
-    return fixtures;
-  } catch (e) {
-    console.error('No se pudo cargar la hoja.', e);
-    return null;
-  }
-}
+        ALL_CATEGORIES = [...new Set(RAW_DATA.map(i => i.categoria))].sort();
+        selectedCategories = [...ALL_CATEGORIES]; // Por defecto seleccionadas todas
 
-function showLoadError() {
-  document.getElementById('nm-label').textContent = 'No se ha podido cargar la información';
-  document.getElementById('nm-list').innerHTML = '';
-  document.getElementById('countdown').style.display = 'none';
-  document.getElementById('view-tabs').innerHTML = '';
-  document.getElementById('filters').innerHTML = '';
-  document.getElementById('fixture-container').innerHTML = `
-    <div class="empty-state error-state">
-      <p><strong>No se ha podido cargar el calendario.</strong><br>
-      Comprueba tu conexión e inténtalo de nuevo. Si el problema continúa, consulta los horarios en la web de la federación.</p>
-      <button class="retry-btn" onclick="location.reload()">Reintentar</button>
-    </div>`;
-  document.getElementById('source-dot').style.background = 'var(--loss)';
-  document.getElementById('source-text').textContent = 'Error al conectar con origen de datos';
-}
+        document.getElementById('sync-dot').style.background = 'var(--win)';
+        document.getElementById('sync-text').textContent = 'Conectado en vivo a Google Sheets';
 
-/* ---------- Ayudas de presentación ---------- */
-const CATEGORIES = ['PreBenjamín', 'Benjamín Blanco', 'Benjamín Negro', 'Alevín Blanco', 'Alevín Negro', 'Infantil', 'Juvenil'];
-const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-const WEEKDAYS = ['dom','lun','mar','mié','jue','vie','sáb'];
-
-function isDragons(name) { return /DRAGONS/i.test(name); }
-function teamColor(categoria) { return /Negro/i.test(categoria) ? 'negro' : 'blanco'; }
-function highlightTeam(name) {
-  const short = name.replace(/DRAGONS EL PUIG\s*/i, 'Dragons ').trim();
-  const label = isDragons(name) ? `<span class="dragons">${short}</span>` : name;
-  const src = logoFor(name);
-  const img = src
-    ? `<img class="team-logo" src="${src}" alt="" width="28" height="28" loading="lazy" onerror="this.remove()">`
-    : '';
-  return `<span class="team">${img}${label}</span>`;
-}
-
-let ALL_FIXTURES = [];
-let activeFilter = 'Todos';
-let activeView = 'proximos';
-
-function startOfToday() {
-  const n = new Date();
-  return new Date(n.getFullYear(), n.getMonth(), n.getDate());
-}
-function isPlayed(f) {
-  return !!f.resultado || f.dateObj < startOfToday();
-}
-
-function renderViewTabs() {
-  const base = activeFilter === 'Todos' ? ALL_FIXTURES : ALL_FIXTURES.filter(f => f.categoria === activeFilter);
-  const played = base.filter(isPlayed).length;
-  const upcoming = base.length - played;
-  const el = document.getElementById('view-tabs');
-  el.innerHTML = `
-    <span class="view-tab ${activeView === 'proximos' ? 'active' : ''}" data-view="proximos">Próximos <span class="count">${upcoming}</span></span>
-    <span class="view-tab ${activeView === 'jugados' ? 'active' : ''}" data-view="jugados">Jugados <span class="count">${played}</span></span>
-  `;
-  el.querySelectorAll('.view-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      activeView = tab.dataset.view;
-      renderViewTabs();
-      renderList();
-    });
-  });
-}
-
-function renderFilters() {
-  const el = document.getElementById('filters');
-  const all = ['Todos', ...CATEGORIES];
-  el.innerHTML = all.map(cat => {
-    const dot = cat === 'Todos' ? '' : `<span class="dot" style="background:${teamColor(cat) === 'negro' ? 'var(--black-team)' : 'var(--white-team)'}; border:1px solid ${teamColor(cat) === 'negro' ? 'var(--silver)' : 'var(--ember)'}"></span>`;
-    return `<span class="chip ${cat === activeFilter ? 'active' : ''}" data-cat="${cat}">${dot}${cat}</span>`;
-  }).join('');
-  el.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      activeFilter = chip.dataset.cat;
-      renderFilters();
-      renderViewTabs();
-      renderList();
-      renderNextMatch();
-    });
-  });
-}
-
-function filteredFixtures() {
-  const list = activeFilter === 'Todos' ? ALL_FIXTURES : ALL_FIXTURES.filter(f => f.categoria === activeFilter);
-  return [...list].sort((a, b) => {
-    const dateDiff = a.dateObj - b.dateObj;
-    if (dateDiff !== 0) return dateDiff;
-    if (a.hora && b.hora) return a.hora.localeCompare(b.hora);
-    if (a.hora) return -1;
-    if (b.hora) return 1;
-    return 0;
-  });
-}
-
-function visibleFixtures() {
-  const list = filteredFixtures();
-  if (activeView === 'jugados') return list.filter(isPlayed).reverse();
-  return list.filter(f => !isPlayed(f));
-}
-
-function renderList() {
-  const container = document.getElementById('fixture-container');
-  const list = visibleFixtures();
-  if (!list.length) {
-    const msg = activeView === 'jugados'
-      ? 'Todavía no hay partidos jugados para este filtro.'
-      : 'No quedan partidos por jugar para este filtro.';
-    container.innerHTML = `<div class="empty-state">${msg}</div>`;
-    return;
-  }
-  let html = '';
-  let lastMonthKey = '';
-  list.forEach(f => {
-    const monthKey = f.dateObj.getFullYear() + '-' + f.dateObj.getMonth();
-    if (monthKey !== lastMonthKey) {
-      html += `<div class="month-heading display">${MONTHS[f.dateObj.getMonth()]} ${f.dateObj.getFullYear()}</div>`;
-      lastMonthKey = monthKey;
+        renderChips();
+        renderNextMatch();
+        renderCalendar();
+      }
+    },
+    error: function(err) {
+      document.getElementById('sync-dot').style.background = 'var(--loss)';
+      document.getElementById('sync-text').textContent = 'Error al conectar';
     }
-    let resultHTML;
-    if (!f.resultado) {
-      resultHTML = `<div class="result-badge pending">${isPlayed(f) ? 'Sin resultado' : 'Por jugar'}</div>`;
-    } else {
-      const parts = f.resultado.split('-').map(Number);
-      const [a, b] = parts;
-      const dragonsLocal = isDragons(f.local);
-      const nuestro = dragonsLocal ? a : b;
-      const rival = dragonsLocal ? b : a;
-      const cls = nuestro > rival ? 'win' : nuestro < rival ? 'loss' : 'draw';
-      resultHTML = `<div class="result-badge ${cls}">${f.resultado}</div>`;
-    }
-    const mapaHTML = f.mapa ? `<a class="map-link" href="${f.mapa}" target="_blank" rel="noopener">📍 Mapa</a>` : '';
-    html += `
-      <div class="fixture">
-        <div class="date">
-          <span class="day">${f.dateObj.getDate()}</span>
-          <span class="wd">${WEEKDAYS[f.dateObj.getDay()]}</span>
-        </div>
-        <div class="info">
-          <div class="tags">
-            <span class="team-dot ${teamColor(f.categoria)}"></span>
-            <span class="cat-tag">${f.categoria}</span>
-            <span class="jor-tag">Jornada ${f.jornada}</span>
-          </div>
-          <div class="teams">${highlightTeam(f.local)}<span class="vs">vs</span>${highlightTeam(f.visitante)}</div>
-          <div class="venue">${f.pista}${f.hora ? ` · <span class="hora">${f.hora}</span>` : ''}</div>
-        </div>
-        <div class="right-col">
-          ${resultHTML}
-          ${mapaHTML}
-        </div>
-      </div>
-    `;
   });
-  container.innerHTML = html;
 }
 
+function renderChips() {
+  const container = document.getElementById('category-chips');
+  container.innerHTML = '';
+
+  const allBtn = document.createElement('div');
+  allBtn.className = `chip ${selectedCategories.length === ALL_CATEGORIES.length ? 'active' : ''}`;
+  allBtn.textContent = 'Todas';
+  allBtn.onclick = () => {
+    selectedCategories = selectedCategories.length === ALL_CATEGORIES.length ? [] : [...ALL_CATEGORIES];
+    renderChips();
+    renderCalendar();
+  };
+  container.appendChild(allBtn);
+
+  ALL_CATEGORIES.forEach(cat => {
+    const isSelected = selectedCategories.includes(cat);
+    const chip = document.createElement('div');
+    chip.className = `chip ${isSelected ? 'active' : ''}`;
+    chip.textContent = cat;
+    chip.onclick = () => {
+      if (selectedCategories.includes(cat)) {
+        selectedCategories = selectedCategories.filter(c => c !== cat);
+      } else {
+        selectedCategories.push(cat);
+      }
+      renderChips();
+      renderCalendar();
+    };
+    container.appendChild(chip);
+  });
+}
+
+/* ---------- TARJETA PRÓXIMO PARTIDO Y CUENTATRÁS ---------- */
 let countdownTimer = null;
 function renderNextMatch() {
-  const upcoming = filteredFixtures().filter(f => !isPlayed(f));
+  const todayStr = new Date().toISOString().split('T')[0];
+  const upcoming = RAW_DATA.filter(m => m.fecha >= todayStr).sort((a, b) => a.fecha.localeCompare(b.fecha));
+
   if (!upcoming.length) {
     document.getElementById('nm-label').textContent = 'No hay más partidos programados';
     document.getElementById('nm-list').innerHTML = '';
     document.getElementById('countdown').style.display = 'none';
     return;
   }
-  const nextDateKey = upcoming[0].dateObj.getTime();
-  const dayMatches = upcoming.filter(f => f.dateObj.getTime() === nextDateKey);
 
-  document.getElementById('countdown').style.display = 'flex';
-  const dateStr = dayMatches[0].dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-  const labelPrefix = dayMatches.length > 1 ? `Próximos partidos · ${dateStr}` : `Próximo partido · ${dateStr}`;
-  document.getElementById('nm-label').textContent = labelPrefix;
+  const nextDate = upcoming[0].fecha;
+  const dayMatches = upcoming.filter(m => m.fecha === nextDate);
+
+  const dateObj = new Date(nextDate + 'T00:00:00');
+  const dateStr = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+  document.getElementById('nm-label').textContent = `Próximos partidos · ${dateStr}`;
 
   document.getElementById('nm-list').innerHTML = dayMatches.map(f => `
     <div class="nm-item">
-      <div class="tag-row">
-        <span class="team-dot ${teamColor(f.categoria)}"></span>
-        <span class="cat-label">${f.categoria} · Jornada ${f.jornada}</span>
-      </div>
-      <div class="matchup">${highlightTeam(f.local)}<span class="vs">vs</span>${highlightTeam(f.visitante)}</div>
-      <div class="meta">${f.hora ? f.hora + ' · ' : 'Hora por confirmar · '}${f.pista}</div>
+      <div class="cat-label">${f.categoria} · ${f.jornada}</div>
+      <div class="matchup"><span class="dragons">${f.local}</span> <span class="vs">vs</span> ${f.visitante}</div>
+      <div class="meta">${f.hora ? f.hora + ' · ' : 'Hora pendiente · '}${f.instalacion}</div>
     </div>
   `).join('');
 
   if (countdownTimer) clearInterval(countdownTimer);
-  const targetDate = new Date(dayMatches[0].dateObj);
-  const withTime = dayMatches.find(f => f.hora);
-  if (withTime) {
-    const [hh, mm] = withTime.hora.split(':').map(Number);
-    targetDate.setHours(hh, mm, 0, 0);
+  const targetDate = new Date(nextDate + 'T00:00:00');
+  if (dayMatches[0].hora) {
+    const [hh, mm] = dayMatches[0].hora.replace('.', ':').split(':').map(Number);
+    if(!isNaN(hh)) targetDate.setHours(hh, mm || 0, 0, 0);
   }
+
   function tick() {
     let diff = targetDate - new Date();
     if (diff < 0) diff = 0;
@@ -631,17 +397,111 @@ function renderNextMatch() {
   countdownTimer = setInterval(tick, 30000);
 }
 
-(async function init() {
-  const data = await loadFixtures();
-  if (!data) { showLoadError(); return; }
-  ALL_FIXTURES = data;
-  renderFilters();
-  renderViewTabs();
-  renderList();
-  renderNextMatch();
-  document.getElementById('source-dot').style.background = 'var(--win)';
-  document.getElementById('source-text').textContent = 'Datos en vivo';
-})();
+/* ---------- RENDER DEL CALENDARIO MENSUAL ---------- */
+function renderCalendar() {
+  const container = document.getElementById('calendar-container');
+  container.innerHTML = '';
+
+  const selectedMonth = document.getElementById('month-select').value;
+  let monthList = (selectedMonth === 'ALL')
+    ? ['2026-09', '2026-10', '2026-11', '2026-12', '2027-01', '2027-02', '2027-03', '2027-04', '2027-05']
+    : [selectedMonth];
+
+  const filteredData = RAW_DATA.filter(item => selectedCategories.includes(item.categoria));
+
+  monthList.forEach(yearMonth => {
+    const [year, month] = yearMonth.split('-').map(Number);
+    container.appendChild(createMonthCard(year, month, filteredData));
+  });
+}
+
+function createMonthCard(year, month, matches) {
+  const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+  const monthWrapper = document.createElement('div');
+  monthWrapper.className = "month-card";
+
+  const title = document.createElement('div');
+  title.className = "month-title";
+  title.textContent = `${monthNames[month - 1]} ${year}`;
+  monthWrapper.appendChild(title);
+
+  const grid = document.createElement('div');
+  grid.className = "calendar-grid";
+
+  // Días de la semana
+  const days = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+  days.forEach((d, idx) => {
+    const dEl = document.createElement('div');
+    dEl.className = `day-header ${idx >= 5 ? 'weekend' : ''}`;
+    dEl.textContent = d;
+    grid.appendChild(dEl);
+  });
+
+  const firstDay = new Date(year, month - 1, 1);
+  let startingDay = firstDay.getDay() - 1;
+  if (startingDay === -1) startingDay = 6;
+
+  const totalDays = new Date(year, month, 0).getDate();
+
+  for (let i = 0; i < startingDay; i++) {
+    const empty = document.createElement('div');
+    empty.style.opacity = '0.2';
+    grid.appendChild(empty);
+  }
+
+  for (let day = 1; day <= totalDays; day++) {
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const currDate = new Date(year, month - 1, day);
+    const dayOfWeek = currDate.getDay();
+    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
+    const dayMatches = matches.filter(m => m.fecha === dateStr);
+
+    const cell = document.createElement('div');
+    cell.className = `calendar-cell ${isWeekend ? 'is-weekend' : ''}`;
+
+    if (isWeekend) {
+      const satDate = new Date(currDate);
+      satDate.setDate(currDate.getDate() - (dayOfWeek === 0 ? 1 : 0));
+      const sunDate = new Date(satDate);
+      sunDate.setDate(satDate.getDate() + 1);
+      const friDate = new Date(satDate);
+      friDate.setDate(satDate.getDate() - 1);
+
+      const wMatches = matches.filter(m => [satDate.toISOString().split('T')[0], sunDate.toISOString().split('T')[0], friDate.toISOString().split('T')[0]].includes(m.fecha));
+      const activeCategoriesWithMatches = new Set(wMatches.map(m => m.categoria));
+
+      if (selectedCategories.length === 0 || activeCategoriesWithMatches.size === 0) {
+        cell.classList.add('free-weekend');
+      } else if (selectedCategories.length > 1 && activeCategoriesWithMatches.size < selectedCategories.length) {
+        cell.classList.add('partial-weekend');
+      } else {
+        cell.classList.add('busy-weekend');
+      }
+    }
+
+    const num = document.createElement('span');
+    num.className = "cell-num";
+    num.textContent = day;
+    cell.appendChild(num);
+
+    if (dayMatches.length > 0) {
+      dayMatches.forEach(m => {
+        const matchEl = document.createElement('div');
+        matchEl.className = "match-pill";
+        matchEl.title = `${m.categoria}: ${m.local} vs ${m.visitante} (${m.instalacion})`;
+        matchEl.textContent = `${m.categoria.replace('Benjamín', 'Benj.').replace('Alevín', 'Alev.')}: ${m.local.replace('DRAGONS EL PUIG', 'Dragons')} vs ${m.visitante.replace('DRAGONS EL PUIG', 'Dragons')}`;
+        cell.appendChild(matchEl);
+      });
+    }
+
+    grid.appendChild(cell);
+  }
+
+  monthWrapper.appendChild(grid);
+  return monthWrapper;
+}
 </script>
 </body>
 </html>
