@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<!-- PapaParse para leer el CSV publicado de Google Sheets -->
-<script type="text/javascript" src="https://gc.kes.v2.scr.kaspersky-labs.com/7EA5E9BB-55E1-4C31-9C21-4943DDFED2E4/main.js?attr=gysyuPf9hEa1TKh370QTDVZ4GeGwMui267t5F_BqVl-uWkduiY4TiBa-FgceE5Pl2qT_Pg8CxZ1VqvBMLjWKHrobh8PzZVrPz4KZp3znug7p2Mw6JPokjMvxutXx5uCsCH4rAPnQlWuYkP4vvkW3H35oVxB4f2zBZ7j2De5FLkHI_LiQbNPyot0-Rlz4pfPRrtB6Wy-bOrtuSYWlQrHLpLzah3wQzB8YqT2uEdUWPu-0m91bKyHNh8bfkcJV-TfdX7UIh9OpYaioAtCDSdp8D_IXvElB0VKghAIs3sbPYn29ytILVx3V5Ndi-WNRbvIq" charset="UTF-8"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<!-- PapaParse para leer el CSV de Google Sheets -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
 <style>
   :root {
@@ -23,8 +23,6 @@
     --win: #4FBF6E;
     --loss: #E14B4B;
     --draw: #D9A536;
-    --black-team: #0E0D0C;
-    --white-team: #F5F3EF;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
@@ -148,7 +146,7 @@
   .cell-num { font-weight: 800; font-size: 0.75rem; color: var(--ink-dim); margin-bottom: 4px; }
   .is-weekend .cell-num { color: var(--ink); }
 
-  /* Estilos del partido dentro de la celda */
+  /* Estilos del partido compacto */
   .match-pill {
     background: var(--ember); color: #fff;
     padding: 3px 5px; border-radius: 4px;
@@ -162,7 +160,6 @@
   }
   .match-pill-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  /* ---------- FOOTER ---------- */
   footer {
     padding: 24px 0; color: var(--ink-dim); font-size: 0.8rem;
     border-top: 1px solid var(--line); text-center: center; margin-top: 30px;
@@ -177,7 +174,6 @@
   <div class="hero-flame"></div>
   <div class="wrap">
     <div class="brand-row">
-      <!-- Carga del logo del club Dragons El Puig desde la carpeta /logos con fallback -->
       <img class="badge" src="logos/puig.png" alt="Dragons El Puig" onerror="this.onerror=null; this.src='https://elpuigdragons.github.io/Calendario_26_27/logos/puig.png';">
       <h1 class="club-name display">DRAGONS<br><span class="accent">EL PUIG</span></h1>
     </div>
@@ -186,9 +182,7 @@
     <div class="controls-bar">
       <div>
         <span class="filter-label">Filtrar por Categoría</span>
-        <div id="category-chips" class="chips">
-          <!-- Categorías dinámicas -->
-        </div>
+        <div id="category-chips" class="chips"></div>
       </div>
       <div>
         <span class="filter-label">Mes</span>
@@ -207,7 +201,7 @@
       </div>
     </div>
 
-    <!-- LEYENDA DE FIN DE SEMANA -->
+    <!-- LEYENDA -->
     <div class="legend-bar">
       <div class="legend-item"><span class="legend-dot free"></span> Fin de semana libre</div>
       <div class="legend-item"><span class="legend-dot partial"></span> Libre para alguna categoría</div>
@@ -218,13 +212,12 @@
 </header>
 
 <main class="wrap">
-  <!-- CONTENEDOR DEL CALENDARIO POR MESES -->
   <div id="calendar-container"></div>
 </main>
 
 <footer>
   <div class="wrap" style="text-align: center;">
-    <p style="margin-bottom: 8px;">© 2026 Dragons El Puig Hockey Club • Sincronizado automáticamente con Google Sheets.</p>
+    <p style="margin-bottom: 8px;">© 2026 Dragons El Puig Hockey Club • Sincronizado.</p>
     <div class="sync-tag">
       <span class="sync-dot" id="sync-dot"></span>
       <span id="sync-text">Conectando...</span>
@@ -235,7 +228,25 @@
 <script>
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSl5xg397GTfLDogRcVZAXObRrp8JH7-j5YAlel0hNU1Sb33IS_WT0KxKDY_5fNKuL_YWnqUubSiG25/pub?gid=795521530&single=true&output=csv";
 
-/* Reglas de mapeo para los logos de cada equipo */
+/* Diccionario de abreviaturas por defecto */
+const DEFAULT_ABBR = {
+  'PreBenjamín': 'PB',
+  'Benjamín Blanco': 'BB',
+  'Benjamín Negro': 'BN',
+  'Alevín Blanco': 'AB',
+  'Alevín Negro': 'AN',
+  'Infantil': 'INF',
+  'Juvenil': 'JUV'
+};
+
+/* Función para obtener la abreviatura (usa Sheets si existe la columna 'Abreviatura', o el diccionario por defecto) */
+function getAbbr(categoria, rawRow) {
+  if (rawRow && rawRow['Abreviatura'] && rawRow['Abreviatura'].trim()) {
+    return rawRow['Abreviatura'].trim();
+  }
+  return DEFAULT_ABBR[categoria] || categoria.substring(0, 3).toUpperCase();
+}
+
 const LOGO_RULES = [
   [/DRAGONS/i,    'puig.png'],
   [/ALAS/i,       'alas.png'],
@@ -278,23 +289,27 @@ function fetchData() {
     skipEmptyLines: true,
     complete: function(results) {
       if (results.data && results.data.length > 0) {
-        RAW_DATA = results.data.map(row => ({
-          categoria: (row['Categoría'] || '').trim(),
-          fecha: parseSpanishDate(row['Fecha'] || ''),
-          hora: (row['Hora'] || '').trim(),
-          instalacion: (row['Instalación / Pista'] || '').trim(),
-          jornada: (row['Jornada'] || '').trim(),
-          local: (row['Equipo Local'] || '').trim(),
-          visitante: (row['Equipo Visitante'] || '').trim(),
-          resultado: (row['Resultado'] || '-').trim(),
-          mapa: (row['Mapa'] || '').trim()
-        })).filter(r => r.categoria && r.fecha);
+        RAW_DATA = results.data.map(row => {
+          const cat = (row['Categoría'] || '').trim();
+          return {
+            categoria: cat,
+            abbr: getAbbr(cat, row),
+            fecha: parseSpanishDate(row['Fecha'] || ''),
+            hora: (row['Hora'] || '').trim(),
+            instalacion: (row['Instalación / Pista'] || '').trim(),
+            jornada: (row['Jornada'] || '').trim(),
+            local: (row['Equipo Local'] || '').trim(),
+            visitante: (row['Equipo Visitante'] || '').trim(),
+            resultado: (row['Resultado'] || '-').trim(),
+            mapa: (row['Mapa'] || '').trim()
+          };
+        }).filter(r => r.categoria && r.fecha);
 
         ALL_CATEGORIES = [...new Set(RAW_DATA.map(i => i.categoria))].sort();
         selectedCategories = [...ALL_CATEGORIES];
 
         document.getElementById('sync-dot').style.background = 'var(--win)';
-        document.getElementById('sync-text').textContent = 'Conectado en vivo a Google Sheets';
+        document.getElementById('sync-text').textContent = 'Conectado origen de datos';
 
         renderChips();
         renderCalendar();
@@ -302,7 +317,7 @@ function fetchData() {
     },
     error: function(err) {
       document.getElementById('sync-dot').style.background = 'var(--loss)';
-      document.getElementById('sync-text').textContent = 'Error al conectar con la hoja';
+      document.getElementById('sync-text').textContent = 'Error al conectar con origen de datos';
     }
   });
 }
@@ -323,9 +338,12 @@ function renderChips() {
 
   ALL_CATEGORIES.forEach(cat => {
     const isSelected = selectedCategories.includes(cat);
+    const item = RAW_DATA.find(r => r.categoria === cat);
+    const abbr = item ? item.abbr : '';
+
     const chip = document.createElement('div');
     chip.className = `chip ${isSelected ? 'active' : ''}`;
-    chip.textContent = cat;
+    chip.textContent = `${cat} (${abbr})`;
     chip.onclick = () => {
       if (selectedCategories.includes(cat)) {
         selectedCategories = selectedCategories.filter(c => c !== cat);
@@ -339,7 +357,6 @@ function renderChips() {
   });
 }
 
-/* RENDER DEL CALENDARIO MENSUAL */
 function renderCalendar() {
   const container = document.getElementById('calendar-container');
   container.innerHTML = '';
@@ -371,7 +388,6 @@ function createMonthCard(year, month, matches) {
   const grid = document.createElement('div');
   grid.className = "calendar-grid";
 
-  // Días de la semana
   const days = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
   days.forEach((d, idx) => {
     const dEl = document.createElement('div');
@@ -433,7 +449,6 @@ function createMonthCard(year, month, matches) {
         const matchEl = document.createElement('div');
         matchEl.className = "match-pill";
         
-        // Determinar el logo del rival
         const rivalName = /DRAGONS/i.test(m.local) ? m.visitante : m.local;
         const logoSrc = logoFor(rivalName);
         
@@ -442,12 +457,11 @@ function createMonthCard(year, month, matches) {
           logoImg = `<img class="match-pill-logo" src="${logoSrc}" alt="" onerror="this.remove();">`;
         }
 
-        const catShort = m.categoria.replace('Benjamín', 'Benj.').replace('Alevín', 'Alev.');
         const localShort = m.local.replace(/DRAGONS EL PUIG\s*/i, 'Dragons ');
         const visitanteShort = m.visitante.replace(/DRAGONS EL PUIG\s*/i, 'Dragons ');
 
         matchEl.title = `${m.categoria}: ${m.local} vs ${m.visitante} (${m.instalacion}${m.hora ? ' · ' + m.hora : ''})`;
-        matchEl.innerHTML = `${logoImg}<span class="match-pill-text"><b>${catShort}</b>: ${localShort} vs ${visitanteShort}</span>`;
+        matchEl.innerHTML = `${logoImg}<span class="match-pill-text"><b>${m.abbr}</b>: ${localShort} vs ${visitanteShort}</span>`;
         cell.appendChild(matchEl);
       });
     }
